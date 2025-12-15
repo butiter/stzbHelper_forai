@@ -177,6 +177,15 @@ func parseBattleData(data []byte) {
 
 			fmt.Printf("保存战斗报告: %+v\n", report)
 
+			// 若已存在相同 battle_id 的记录则更新原记录，避免唯一约束报错
+			var existing model.BattleReport
+			if err := model.Conn.Where("battle_id = ?", report.BattleId).First(&existing).Error; err == nil {
+				report.ID = existing.ID
+			} else if err != nil && err != gorm.ErrRecordNotFound {
+				log.Printf("查询战斗报告失败: %v", err)
+				continue
+			}
+
 			// 保存到数据库
 			result := model.Conn.Save(&report)
 			if result.Error != nil {
