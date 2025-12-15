@@ -318,6 +318,14 @@ onBeforeUnmount(() => {
                                                 阵容统计
                                         </n-button>
                                 </n-form-item>
+<n-form-item>
+<n-button attr-type="button" @click="()=>{
+router.push('/battle-info')
+}}">
+战报信息
+</n-button>
+</n-form-item>
+
                         </n-form>
                         <div class="report">
 				<div class="report-item" v-for="item in report">
