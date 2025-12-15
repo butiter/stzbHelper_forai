@@ -42,6 +42,14 @@ export function getPlayerTeam(data){
     return api.get('player/team/get?'+qs.stringify(data));
 }
 
+export function lineupList(data){
+    return api.get('lineup/list?'+qs.stringify(data));
+}
+
+export function exportLineup(data){
+    return api.get('lineup/export?'+qs.stringify(data),{responseType:'blob'});
+}
+
 // export async function aitest(data) {
 //     const response = await fetch(`${baseURL}ai/chat/completions`, {
 //         method: 'POST',

@@ -304,15 +304,22 @@ onBeforeUnmount(() => {
 					<n-switch v-model:value="noviewnpc" />
 				</n-form-item>
                 <n-form-item>
-					<n-button attr-type="button" @click="()=>{
-                        
+                                        <n-button attr-type="button" @click="()=>{
+
                         router.push('/team')
                     }">
-						前往查询队伍
-					</n-button>
-				</n-form-item>
-			</n-form>
-			<div class="report">
+                                                前往查询队伍
+                                        </n-button>
+                                </n-form-item>
+                <n-form-item>
+                                        <n-button attr-type="button" @click="()=>{
+                        router.push('/lineup')
+                    }">
+                                                阵容统计
+                                        </n-button>
+                                </n-form-item>
+                        </n-form>
+                        <div class="report">
 				<div class="report-item" v-for="item in report">
 					<div style="align-self: flex-start;margin-left: 8px;">战报ID：{{ item.battle_id }}</div>
 					<div class="report-header">
