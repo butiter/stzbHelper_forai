@@ -3,14 +3,18 @@ package main
 import (
 	"bytes"
 	"compress/zlib"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"stzbHelper/global"
 	"stzbHelper/model"
+
+	"gorm.io/gorm"
 )
 
 func ParseData(cmdId int, data []byte) {
@@ -74,6 +78,8 @@ type BattleData struct {
 	AttackIdu             string      `json:"attack_idu"` //进攻方队伍ID
 	DefendIdu             string      `json:"defend_idu"` //防守方队伍ID
 }
+
+const lineupDebugFile = "lineup_debug.csv"
 
 func parseBattleData(data []byte) {
 	msgdata := parseZlibData(data)
@@ -177,6 +183,7 @@ func parseBattleData(data []byte) {
 				log.Printf("保存战斗报告失败: %v", result.Error)
 			} else {
 				battleCount++
+				saveLineupRecords(report)
 				fmt.Printf("成功保存战斗报告, ID: %d, 影响行数: %d\n", report.BattleId, result.RowsAffected)
 			}
 		}
@@ -286,6 +293,156 @@ func parseHeroInfo(report model.BattleReport) model.BattleReport {
 	}
 
 	return report
+}
+
+func saveLineupRecords(report model.BattleReport) {
+	var debugEntries []model.Lineup
+
+	if attack := buildLineupFromReport(report, "attack"); attack != nil {
+		upsertLineup(*attack)
+		debugEntries = append(debugEntries, *attack)
+	}
+
+	if defend := buildLineupFromReport(report, "defend"); defend != nil {
+		upsertLineup(*defend)
+		debugEntries = append(debugEntries, *defend)
+	}
+
+	if len(debugEntries) > 0 {
+		appendLineupDebugLog(debugEntries...)
+	}
+}
+
+func buildLineupFromReport(report model.BattleReport, role string) *model.Lineup {
+	lineup := model.Lineup{
+		PlayerRole: role,
+		BattleID:   report.BattleId,
+		RecordTime: report.Time,
+	}
+
+	if role == "attack" {
+		lineup.PlayerName = report.AttackName
+		lineup.UnionName = report.AttackUnionName
+		lineup.PlayerID = firstNonEmpty(report.AttackIdu, report.AttackHelpId)
+		lineup.Hero1ID = report.AttackHero1Id
+		lineup.Hero2ID = report.AttackHero2Id
+		lineup.Hero3ID = report.AttackHero3Id
+		lineup.Hero1Level = report.AttackHero1Level
+		lineup.Hero2Level = report.AttackHero2Level
+		lineup.Hero3Level = report.AttackHero3Level
+		lineup.Hero1Star = report.AttackHero1Star
+		lineup.Hero2Star = report.AttackHero2Star
+		lineup.Hero3Star = report.AttackHero3Star
+	} else {
+		lineup.PlayerName = report.DefendName
+		lineup.UnionName = report.DefendUnionName
+		lineup.PlayerID = report.DefendIdu
+		lineup.Hero1ID = report.DefendHero1Id
+		lineup.Hero2ID = report.DefendHero2Id
+		lineup.Hero3ID = report.DefendHero3Id
+		lineup.Hero1Level = report.DefendHero1Level
+		lineup.Hero2Level = report.DefendHero2Level
+		lineup.Hero3Level = report.DefendHero3Level
+		lineup.Hero1Star = report.DefendHero1Star
+		lineup.Hero2Star = report.DefendHero2Star
+		lineup.Hero3Star = report.DefendHero3Star
+	}
+
+	heroNames := []string{resolveHeroName(lineup.Hero1ID), resolveHeroName(lineup.Hero2ID), resolveHeroName(lineup.Hero3ID)}
+	lineup.Hero1Name = heroNames[0]
+	lineup.Hero2Name = heroNames[1]
+	lineup.Hero3Name = heroNames[2]
+	lineup.LineupKey = strings.Join(heroNames, "|")
+	lineup.BattleUID = generateBattleUID(report, lineup)
+
+	if lineup.PlayerName == "" && lineup.LineupKey == "||" {
+		return nil
+	}
+
+	return &lineup
+}
+
+func generateBattleUID(report model.BattleReport, lineup model.Lineup) string {
+	parts := []string{strconv.FormatInt(report.Time, 10), strconv.FormatInt(report.BattleId, 10), lineup.PlayerRole, lineup.LineupKey}
+	if lineup.PlayerID != "" {
+		parts = append(parts, lineup.PlayerID)
+	}
+	if report.Wid != "" {
+		parts = append(parts, report.Wid)
+	}
+
+	return strings.Join(parts, "-")
+}
+
+func upsertLineup(lineup model.Lineup) {
+	var existing model.Lineup
+	tx := model.Conn.Where("player_name = ? AND lineup_key = ?", lineup.PlayerName, lineup.LineupKey).First(&existing)
+	if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
+		log.Printf("保存阵容失败: %v", tx.Error)
+		return
+	}
+
+	if tx.Error == nil {
+		lineup.ID = existing.ID
+		lineup.CreatedAt = existing.CreatedAt
+		model.Conn.Model(&existing).Updates(lineup)
+		return
+	}
+
+	if err := model.Conn.Create(&lineup).Error; err != nil {
+		log.Printf("创建阵容失败: %v", err)
+	}
+}
+
+func appendLineupDebugLog(lineups ...model.Lineup) {
+	file, err := os.OpenFile(lineupDebugFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("写入阵容调试日志失败: %v", err)
+		return
+	}
+	defer file.Close()
+
+	info, _ := file.Stat()
+	writer := csv.NewWriter(file)
+	if info != nil && info.Size() == 0 {
+		_ = writer.Write([]string{"battle_uid", "role", "player_name", "union_name", "lineup", "hero1", "hero2", "hero3", "time", "battle_id"})
+	}
+
+	for _, lineup := range lineups {
+		_ = writer.Write([]string{
+			lineup.BattleUID,
+			lineup.PlayerRole,
+			lineup.PlayerName,
+			lineup.UnionName,
+			lineup.LineupKey,
+			fmt.Sprintf("%s-%d红-%d级", lineup.Hero1Name, lineup.Hero1Star, lineup.Hero1Level),
+			fmt.Sprintf("%s-%d红-%d级", lineup.Hero2Name, lineup.Hero2Star, lineup.Hero2Level),
+			fmt.Sprintf("%s-%d红-%d级", lineup.Hero3Name, lineup.Hero3Star, lineup.Hero3Level),
+			strconv.FormatInt(lineup.RecordTime, 10),
+			strconv.FormatInt(lineup.BattleID, 10),
+		})
+	}
+
+	writer.Flush()
+}
+
+func resolveHeroName(heroID int64) string {
+	if heroID == 0 {
+		return ""
+	}
+	if name, ok := model.HeroNameMap[heroID]; ok {
+		return name
+	}
+	return strconv.FormatInt(heroID, 10)
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // 分割和过滤字符串
