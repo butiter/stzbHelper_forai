@@ -31,6 +31,8 @@ func Register(r *gin.RouterGroup) {
 	r.Any("deleteTaskReport/:tid", api.DelTaskReport)
 	r.GET("stzb/report/list", api.ReportList)
 	r.GET("stzb/player/team/get", api.GetPlayerTeam)
+	r.GET("stzb/lineup/list", api.LineupList)
+	r.GET("stzb/lineup/export", api.ExportLineupCSV)
 	// 开启获取战报详情
 	r.Any("enable/getBattleReport", api.EnableGetBattleData)
 	// 关闭获取战报详情
