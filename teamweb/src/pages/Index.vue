@@ -325,6 +325,7 @@ router.push('/battle-info')
 战报信息
 </n-button>
 </n-form-item>
+
                         </n-form>
                         <div class="report">
 				<div class="report-item" v-for="item in report">

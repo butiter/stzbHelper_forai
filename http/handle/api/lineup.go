@@ -82,11 +82,13 @@ func applyLineupFilter(c *gin.Context, query *gorm.DB) *gorm.DB {
 	if role != "" {
 		query = query.Where("player_role = ?", role)
 	}
+
 	if minLevelStr != "" {
 		if minLevel, err := strconv.Atoi(minLevelStr); err == nil && minLevel > 0 {
 			query = query.Where("min(hero1_level, hero2_level, hero3_level) >= ?", minLevel)
 		}
 	}
+
 
 	return query
 }
