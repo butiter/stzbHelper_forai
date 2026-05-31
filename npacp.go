@@ -176,6 +176,10 @@ func handlePacket(packet gopacket.Packet) {
 
 				} else if buf[12] == 5 {
 					//println(buf)
+					if cmdId == 2100 || cmdId == 2200 {
+						data := DecodeType5(buf[12:])
+						go processSocialPacket(cmdId, []byte(data))
+					}
 					if global.IsDebug == true {
 						data := DecodeType5(buf[12:])
 						fmt.Println(data)

@@ -60,6 +60,11 @@ const menuOptions = [
         key: 'book',
         icon: renderIcon(BookOpen)
     },
+    {
+        label: '聊天公告',
+        key: 'chatlog',
+        icon: renderIcon(MessageSquare)
+    },
     // {
     //     label: '战役叫阵',
     //     key: 'battlecall',

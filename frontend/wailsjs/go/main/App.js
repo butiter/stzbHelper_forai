@@ -54,6 +54,10 @@ export function GetDbList() {
   return window['go']['main']['App']['GetDbList']();
 }
 
+export function GetChatMessages(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['GetChatMessages'](arg1, arg2, arg3, arg4);
+}
+
 export function GetGroupWu() {
   return window['go']['main']['App']['GetGroupWu']();
 }
@@ -96,6 +100,10 @@ export function GetTeamWinRateByTeam(arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
 
 export function GetVersion() {
   return window['go']['main']['App']['GetVersion']();
+}
+
+export function GetWorldAnnouncements(arg1, arg2) {
+  return window['go']['main']['App']['GetWorldAnnouncements'](arg1, arg2);
 }
 
 export function Greet(arg1) {

@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 	"stzbHelper/global"
 	"stzbHelper/model"
+	"time"
 
 	"golang.org/x/sys/windows"
 )
@@ -932,6 +932,61 @@ func (a *App) GetTeamWinRateByTeam(name string, uname string, idu string, page i
 	log.Printf("查询队伍胜率(按队伍): name=%s, union=%s, idu=%s, page=%d, total=%d, 结果: %d条", name, uname, idu, page, total, len(pageResults))
 	return global.Response{Data: map[string]interface{}{
 		"list":     pageResults,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	}}.Success()
+}
+
+func normalizePage(page int, pageSize int) (int, int) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 200 {
+		pageSize = 50
+	}
+	return page, pageSize
+}
+
+func (a *App) GetChatMessages(page int, pageSize int, channel int, keyword string) string {
+	if model.Conn == nil {
+		return global.Response{Data: map[string]interface{}{"list": []model.ChatMessage{}, "total": 0, "page": page, "pageSize": pageSize}}.Success()
+	}
+	page, pageSize = normalizePage(page, pageSize)
+	query := model.Conn.Model(&model.ChatMessage{})
+	if channel > 0 {
+		query = query.Where("channel = ?", channel)
+	}
+	if keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where("player LIKE ? OR union_name LIKE ? OR content LIKE ?", like, like, like)
+	}
+
+	var total int64
+	query.Count(&total)
+	var list []model.ChatMessage
+	query.Order("time DESC, id DESC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&list)
+	return global.Response{Data: map[string]interface{}{
+		"list":     list,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	}}.Success()
+}
+
+func (a *App) GetWorldAnnouncements(page int, pageSize int) string {
+	if model.Conn == nil {
+		return global.Response{Data: map[string]interface{}{"list": []model.WorldAnnouncement{}, "total": 0, "page": page, "pageSize": pageSize}}.Success()
+	}
+	page, pageSize = normalizePage(page, pageSize)
+	query := model.Conn.Model(&model.WorldAnnouncement{})
+
+	var total int64
+	query.Count(&total)
+	var list []model.WorldAnnouncement
+	query.Order("time DESC, id DESC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&list)
+	return global.Response{Data: map[string]interface{}{
+		"list":     list,
 		"total":    total,
 		"page":     page,
 		"pageSize": pageSize,

@@ -27,6 +27,8 @@ export function EnableGetReport(arg1:number):Promise<string>;
 
 export function GetDbList():Promise<string>;
 
+export function GetChatMessages(arg1:number,arg2:number,arg3:number,arg4:string):Promise<string>;
+
 export function GetGroupWu():Promise<string>;
 
 export function GetLogs():Promise<string>;
@@ -48,6 +50,8 @@ export function GetTeamWinRate(arg1:string,arg2:string,arg3:string,arg4:number,a
 export function GetTeamWinRateByTeam(arg1:string,arg2:string,arg3:string,arg4:number,arg5:number,arg6:number,arg7:number):Promise<string>;
 
 export function GetVersion():Promise<string>;
+
+export function GetWorldAnnouncements(arg1:number,arg2:number):Promise<string>;
 
 export function Greet(arg1:string):Promise<string>;
 

@@ -9,6 +9,7 @@ import NpcapHelp from './pages/NpcapHelp.vue';
 import Debug from './pages/Debug.vue';
 import TeamQuery from './pages/TeamQuery.vue';
 import Book from './pages/Book.vue';
+import ChatLog from './pages/ChatLog.vue';
 // import BattleCall from './pages/BattleCall.vue';
 import TeamWinRate from './pages/TeamWinRate.vue';
 import { CheckNpcap } from '../wailsjs/go/main/App';
@@ -79,6 +80,12 @@ const routes = [
         name: 'book',
         component: Book,
         meta: { title: '主公簿' }
+    },
+    {
+        path: '/chatlog',
+        name: 'chatlog',
+        component: ChatLog,
+        meta: { title: '聊天公告' }
     },
     // {
     //     path: '/battlecall',
