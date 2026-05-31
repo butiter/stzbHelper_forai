@@ -10,11 +10,10 @@ import (
 
 var Conn *gorm.DB
 
-// InitDB 初始化数据库连接
-// databasePath 可以是绝对路径或相对路径，不带 .db 后缀
+// InitDB 初始化数据库连接。
+// databasePath 可以是绝对路径或相对路径，不带 .db 后缀。
 func InitDB(databasePath string) {
 	dsn := databasePath + ".db?cache=shared&mode=rwc"
-	// SQLite 需要正斜杠
 	dsn = strings.ReplaceAll(dsn, "\\", "/")
 	log.Println("正在连接数据库:", dsn)
 
@@ -24,13 +23,12 @@ func InitDB(databasePath string) {
 		return
 	}
 
-	err = db.AutoMigrate(&TeamUser{}, &Task{}, &Report{}, &BattleReport{}, &ChatMessage{}, &WorldAnnouncement{})
+	err = db.AutoMigrate(&TeamUser{}, &Task{}, &Report{}, &BattleReport{}, &Lineup{}, &ChatMessage{}, &WorldAnnouncement{})
 	if err != nil {
 		log.Println("数据库迁移失败:", err)
 		return
 	}
 
-	// 为 battle_report 创建查询索引
 	indexes := []string{
 		"CREATE INDEX IF NOT EXISTS idx_br_attack_name ON battle_report(attack_name)",
 		"CREATE INDEX IF NOT EXISTS idx_br_defend_name ON battle_report(defend_name)",
